@@ -1,0 +1,6 @@
+{
+    "Parameters": {
+        "KeyName": "hackathon",
+        "DBRootPassword": "123456"
+    }
+}

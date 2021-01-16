@@ -1,0 +1,1062 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS CloudFormation Template TiDB_Single_Instance",
+    "Parameters": {
+        "KeyName": {
+            "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+            "Type": "AWS::EC2::KeyPair::KeyName",
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+        },
+        "DBRootPassword": {
+            "NoEcho": "true",
+            "Description": "Root password for TiDB",
+            "Type": "String",
+            "MinLength": "1",
+            "MaxLength": "41",
+            "AllowedPattern": "[a-zA-Z0-9]*",
+            "ConstraintDescription": "must contain only alphanumeric characters."
+        },
+        "InstanceType": {
+            "Description": "WebServer EC2 instance type",
+            "Type": "String",
+            "Default": "t2.small",
+            "AllowedValues": [
+                "t1.micro",
+                "t2.nano",
+                "t2.micro",
+                "t2.small",
+                "t2.medium",
+                "t2.large",
+                "m1.small",
+                "m1.medium",
+                "m1.large",
+                "m1.xlarge",
+                "m2.xlarge",
+                "m2.2xlarge",
+                "m2.4xlarge",
+                "m3.medium",
+                "m3.large",
+                "m3.xlarge",
+                "m3.2xlarge",
+                "m4.large",
+                "m4.xlarge",
+                "m4.2xlarge",
+                "m4.4xlarge",
+                "m4.10xlarge",
+                "c1.medium",
+                "c1.xlarge",
+                "c3.large",
+                "c3.xlarge",
+                "c3.2xlarge",
+                "c3.4xlarge",
+                "c3.8xlarge",
+                "c4.large",
+                "c4.xlarge",
+                "c4.2xlarge",
+                "c4.4xlarge",
+                "c4.8xlarge",
+                "g2.2xlarge",
+                "g2.8xlarge",
+                "r3.large",
+                "r3.xlarge",
+                "r3.2xlarge",
+                "r3.4xlarge",
+                "r3.8xlarge",
+                "i2.xlarge",
+                "i2.2xlarge",
+                "i2.4xlarge",
+                "i2.8xlarge",
+                "d2.xlarge",
+                "d2.2xlarge",
+                "d2.4xlarge",
+                "d2.8xlarge",
+                "hi1.4xlarge",
+                "hs1.8xlarge",
+                "cr1.8xlarge",
+                "cc2.8xlarge",
+                "cg1.4xlarge"
+            ],
+            "ConstraintDescription": "must be a valid EC2 instance type."
+        },
+        "SSHLocation": {
+            "Description": " The IP address range that can be used to SSH to the EC2 instances",
+            "Type": "String",
+            "MinLength": "9",
+            "MaxLength": "18",
+            "Default": "0.0.0.0/0",
+            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+        }
+    },
+    "Mappings": {
+        "AWSInstanceType2Arch": {
+            "t1.micro": {
+                "Arch": "HVM64"
+            },
+            "t2.nano": {
+                "Arch": "HVM64"
+            },
+            "t2.micro": {
+                "Arch": "HVM64"
+            },
+            "t2.small": {
+                "Arch": "HVM64"
+            },
+            "t2.medium": {
+                "Arch": "HVM64"
+            },
+            "t2.large": {
+                "Arch": "HVM64"
+            },
+            "m1.small": {
+                "Arch": "HVM64"
+            },
+            "m1.medium": {
+                "Arch": "HVM64"
+            },
+            "m1.large": {
+                "Arch": "HVM64"
+            },
+            "m1.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m2.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m2.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "m2.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "m3.medium": {
+                "Arch": "HVM64"
+            },
+            "m3.large": {
+                "Arch": "HVM64"
+            },
+            "m3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.large": {
+                "Arch": "HVM64"
+            },
+            "m4.xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "m4.10xlarge": {
+                "Arch": "HVM64"
+            },
+            "c1.medium": {
+                "Arch": "HVM64"
+            },
+            "c1.xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.large": {
+                "Arch": "HVM64"
+            },
+            "c3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.large": {
+                "Arch": "HVM64"
+            },
+            "c4.xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "c4.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "g2.2xlarge": {
+                "Arch": "HVMG2"
+            },
+            "g2.8xlarge": {
+                "Arch": "HVMG2"
+            },
+            "r3.large": {
+                "Arch": "HVM64"
+            },
+            "r3.xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "r3.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "i2.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.2xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "d2.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "hi1.4xlarge": {
+                "Arch": "HVM64"
+            },
+            "hs1.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "cr1.8xlarge": {
+                "Arch": "HVM64"
+            },
+            "cc2.8xlarge": {
+                "Arch": "HVM64"
+            }
+        },
+        "AWSInstanceType2NATArch": {
+            "t1.micro": {
+                "Arch": "NATHVM64"
+            },
+            "t2.nano": {
+                "Arch": "NATHVM64"
+            },
+            "t2.micro": {
+                "Arch": "NATHVM64"
+            },
+            "t2.small": {
+                "Arch": "NATHVM64"
+            },
+            "t2.medium": {
+                "Arch": "NATHVM64"
+            },
+            "t2.large": {
+                "Arch": "NATHVM64"
+            },
+            "m1.small": {
+                "Arch": "NATHVM64"
+            },
+            "m1.medium": {
+                "Arch": "NATHVM64"
+            },
+            "m1.large": {
+                "Arch": "NATHVM64"
+            },
+            "m1.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m2.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m2.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m2.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m3.medium": {
+                "Arch": "NATHVM64"
+            },
+            "m3.large": {
+                "Arch": "NATHVM64"
+            },
+            "m3.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m3.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m4.large": {
+                "Arch": "NATHVM64"
+            },
+            "m4.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m4.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m4.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "m4.10xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c1.medium": {
+                "Arch": "NATHVM64"
+            },
+            "c1.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c3.large": {
+                "Arch": "NATHVM64"
+            },
+            "c3.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c3.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c3.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c3.8xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c4.large": {
+                "Arch": "NATHVM64"
+            },
+            "c4.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c4.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c4.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "c4.8xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "g2.2xlarge": {
+                "Arch": "NATHVMG2"
+            },
+            "g2.8xlarge": {
+                "Arch": "NATHVMG2"
+            },
+            "r3.large": {
+                "Arch": "NATHVM64"
+            },
+            "r3.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "r3.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "r3.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "r3.8xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "i2.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "i2.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "i2.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "i2.8xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "d2.xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "d2.2xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "d2.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "d2.8xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "hi1.4xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "hs1.8xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "cr1.8xlarge": {
+                "Arch": "NATHVM64"
+            },
+            "cc2.8xlarge": {
+                "Arch": "NATHVM64"
+            }
+        },
+        "AWSRegionArch2AL1AMI": {
+            "af-south-1": {
+                "HVM64": "ami-064cc455f8a1ef504",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-east-1": {
+                "HVM64": "ami-f85b1989",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-northeast-1": {
+                "HVM64": "ami-0b2c2a754d5b4da22",
+                "HVMG2": "ami-09d0e0e099ecabba2"
+            },
+            "ap-northeast-2": {
+                "HVM64": "ami-0493ab99920f410fc",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-northeast-3": {
+                "HVM64": "ami-01344f6f63a4decc1",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "ap-south-1": {
+                "HVM64": "ami-03cfb5e1fb4fac428",
+                "HVMG2": "ami-0244c1d42815af84a"
+            },
+            "ap-southeast-1": {
+                "HVM64": "ami-0ba35dc9caf73d1c7",
+                "HVMG2": "ami-0e46ce0d6a87dc979"
+            },
+            "ap-southeast-2": {
+                "HVM64": "ami-0ae99b503e8694028",
+                "HVMG2": "ami-0c0ab057a101d8ff2"
+            },
+            "ca-central-1": {
+                "HVM64": "ami-0803e21a2ec22f953",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "cn-north-1": {
+                "HVM64": "ami-07a3f215cc90c889c",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "cn-northwest-1": {
+                "HVM64": "ami-0a3b3b10f714a0ff4",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "eu-central-1": {
+                "HVM64": "ami-0474863011a7d1541",
+                "HVMG2": "ami-0aa1822e3eb913a11"
+            },
+            "eu-north-1": {
+                "HVM64": "ami-0de4b8910494dba0f",
+                "HVMG2": "ami-32d55b4c"
+            },
+            "eu-south-1": {
+                "HVM64": "ami-08427144fe9ebdef6",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "eu-west-1": {
+                "HVM64": "ami-015232c01a82b847b",
+                "HVMG2": "ami-0d5299b1c6112c3c7"
+            },
+            "eu-west-2": {
+                "HVM64": "ami-0765d48d7e15beb93",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "eu-west-3": {
+                "HVM64": "ami-0caf07637eda19d9c",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "me-south-1": {
+                "HVM64": "ami-0744743d80915b497",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "sa-east-1": {
+                "HVM64": "ami-0a52e8a6018e92bb0",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "us-east-1": {
+                "HVM64": "ami-032930428bf1abbff",
+                "HVMG2": "ami-0aeb704d503081ea6"
+            },
+            "us-east-2": {
+                "HVM64": "ami-027cab9a7bf0155df",
+                "HVMG2": "NOT_SUPPORTED"
+            },
+            "us-west-1": {
+                "HVM64": "ami-088c153f74339f34c",
+                "HVMG2": "ami-0a7fc72dc0e51aa77"
+            },
+            "us-west-2": {
+                "HVM64": "ami-01fee56b22f308154",
+                "HVMG2": "ami-0fe84a5b4563d8f27"
+            }
+        },
+        "AWSRegionArch2AL2AMI": {
+            "us-east-2": {
+                "HVM64": "ami-0a0ad6b70e61be944",
+                "HVMG2": "NOT_SUPPORTED"
+            }
+        }
+    },
+    "Resources": {
+        "TiDBServerInstance": {
+            "Type": "AWS::EC2::Instance",
+            "DependsOn": [
+                "TiKV1ServerInstance",
+                "TiKV2ServerInstance"
+            ],
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "configSets": {
+                        "InstallAndRun": [
+                            "Dependencies",
+                            "AddUser",
+                            "ImportFile",
+                            "Install",
+                            "SetRootPassword"
+                        ]
+                    },
+                    "Dependencies": {
+                        "packages": {
+                            "yum": {
+                                "mariadb": []
+                            }
+                        }
+                    },
+                    "AddUser": {
+                        "commands": {
+                            "01_adduser": {
+                                "command": "sudo su - root -c 'useradd -m tidb'"
+                            },
+                            "02_sudoer": {
+                                "command": "sudo su - root -c 'echo \"tidb ALL=(ALL) NOPASSWD: ALL\" > /etc/sudoers.d/tidb'"
+                            },
+                            "03_chmod": {
+                                "command": "sudo su - tidb -c 'mkdir -p /home/tidb/.ssh/ && chmod 0700 /home/tidb/.ssh/'"
+                            }
+                        }
+                    },
+                    "ImportFile": {
+                        "files": {
+                            "/home/tidb/.ssh/authorized_keys": {
+                                "content": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDPZ9ChdjqtaCfvCclZN6273gXju8ZILPEawZgtjdEPdI81ujxA18zztsSdC7n/zuoqrzSY7S7HDtNW37GhHkcg8QneBjY09pCxFZpE/7oIn+RxDic3kkPcWRSldgk3i2+xF2TBVf29xdwVewkOsJU7IEk5kPAp0TzfGGWbk69rC3KMRsCbOpXpAnwusn2e2prgUm0Xhl94UvvI09vX8RE2LiJnF+C0h4uy9JLqdpD6h0lKwPnQ8s08t+HwVNzzaL/kQy6FTcoBLl8baJJoE59vKU0MjlCf3z4ZWq0P66/tiCNIKXwGLpyml+8J966pv6LJOQdDfoBY/wj2IWWBGEkwmCZUoXBrQp6jtbAAIOM6EvDK/iqGvk1OAiNPUsJ03jU7/eEWKT9hs2Gw+n8Rs39AqueX7tlikSmPHRPLO2nTWQEdEIzLBHQ8GYioqtUoQvycdf1S05whNCwwh++D8S9r/4Z8wAIfpoC+f//1QP74WPkQaapUX8qTHHcOpuwQDis= leoppro@LeopProdeMacBook-Pro.local",
+                                "mode": "000700",
+                                "owner": "tidb",
+                                "group": "tidb"
+                            },
+                            "/root/tidb.pem": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "-----BEGIN OPENSSH PRIVATE KEY-----\n",
+                                            "-----END OPENSSH PRIVATE KEY-----\n"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000400",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/root/init.sh": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "PUBLICIP=`curl http://169.254.169.254/latest/meta-data/public-ipv4`\n",
+                                            "LOCALIP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`\n",
+                                            "echo \"LOCALIP: $LOCALIP, PUBLICIP: $PUBLICIP\"\n",
+                                            "sed \"s/{{PublicIp}}/$PUBLICIP/\" -i /root/deploy.yaml\n",
+                                            "sed \"s/{{PrivateIp}}/$LOCALIP/\" -i /root/deploy.yaml\n",
+                                            "\n",
+                                            "curl --proto '=https' --tlsv1.2 -sSf https://tiup-mirrors.pingcap.com/install.sh | sh\n",
+                                            "/root/.tiup/bin/tiup install cluster\n",
+                                            "/root/.tiup/bin/tiup cluster deploy test-cluster v4.0.9 /root/deploy.yaml  -u tidb -y --ignore-config-check -i /root/tidb.pem &> /root/deploy.log\n",
+                                            "/root/.tiup/bin/tiup cluster start test-cluster\n"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000700",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/root/deploy.yaml": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "global:\n",
+                                            "  user: \"tidb2\"\n",
+                                            "  ssh_port: 22\n",
+                                            "  deploy_dir: \"/home/tidb2/tidb-deploy\"\n",
+                                            "  data_dir: \"/home/tidb2/tidb-data\"\n",
+                                            "\n",
+                                            "pd_servers:\n",
+                                            "  - host: {{PublicIp}}\n",
+                                            "  - host: ",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "TiKV1ServerInstance",
+                                                    "PublicIp"
+                                                ]
+                                            },
+                                            "\n",
+                                            "  - host: ",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "TiKV2ServerInstance",
+                                                    "PublicIp"
+                                                ]
+                                            },
+                                            "\n",
+                                            "\n",
+                                            "tidb_servers:\n",
+                                            "  - host: {{PublicIp}}\n",
+                                            "\n",
+                                            "tikv_servers:\n",
+                                            "  - host: {{PublicIp}}\n",
+                                            "  - host: ",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "TiKV1ServerInstance",
+                                                    "PublicIp"
+                                                ]
+                                            },
+                                            "\n",
+                                            "  - host: ",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "TiKV2ServerInstance",
+                                                    "PublicIp"
+                                                ]
+                                            },
+                                            "\n",
+                                            "\n",
+                                            "#monitoring_servers:\n",
+                                            "#  - host: {{PublicIp}}\n",
+                                            "\n",
+                                            "#grafana_servers:\n",
+                                            "#  - host: {{PublicIp}}\n",
+                                            "\n",
+                                            "#alertmanager_servers:\n",
+                                            "#  - host: {{PublicIp}}\n",
+                                            "\n"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000600",
+                                "owner": "root",
+                                "group": "root"
+                            }
+                        }
+                    },
+                    "Install": {
+                        "commands": {
+                            "01_install_and_run_tidb_cluster": {
+                                "command": "sudo su - root -c '/root/init.sh'"
+                            }
+                        }
+                    },
+                    "SetRootPassword": {
+                        "commands": {
+                            "01_set_root_password": {
+                                "command": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "mysql -u root -h 127.0.0.1 -P 4000 -e \"SET PASSWORD FOR 'root'@'%' = '",
+                                            {
+                                                "Ref": "DBRootPassword"
+                                            },
+                                            "'\""
+                                        ]
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSRegionArch2AL2AMI",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        {
+                            "Fn::FindInMap": [
+                                "AWSInstanceType2Arch",
+                                {
+                                    "Ref": "InstanceType"
+                                },
+                                "Arch"
+                            ]
+                        }
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "TiDBServerSecurityGroup"
+                    }
+                ],
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash -xe\n",
+                                "yum update -y aws-cfn-bootstrap\n",
+                                "# Install the files and packages from the metadata\n",
+                                "/opt/aws/bin/cfn-init -v ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource TiDBServerInstance ",
+                                "         --configsets InstallAndRun ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n",
+                                "# Signal the status from cfn-init\n",
+                                "/opt/aws/bin/cfn-signal -e $? ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource TiDBServerInstance ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "CreationPolicy": {
+                "ResourceSignal": {
+                    "Timeout": "PT15M"
+                }
+            }
+        },
+        "TiKV1ServerInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "configSets": {
+                        "InstallAndRun": [
+                            "AddUser",
+                            "ImportFile"
+                        ]
+                    },
+                    "AddUser": {
+                        "commands": {
+                            "01_adduser": {
+                                "command": "sudo su - root -c 'useradd -m tidb'"
+                            },
+                            "02_sudoer": {
+                                "command": "sudo su - root -c 'echo \"tidb ALL=(ALL) NOPASSWD: ALL\" > /etc/sudoers.d/tidb'"
+                            },
+                            "03_chmod": {
+                                "command": "sudo su - tidb -c 'mkdir -p /home/tidb/.ssh/ && chmod 0700 /home/tidb/.ssh/'"
+                            }
+                        }
+                    },
+                    "ImportFile": {
+                        "files": {
+                            "/home/tidb/.ssh/authorized_keys": {
+                                "content": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDPZ9ChdjqtaCfvCclZN6273gXju8ZILPEawZgtjdEPdI81ujxA18zztsSdC7n/zuoqrzSY7S7HDtNW37GhHkcg8QneBjY09pCxFZpE/7oIn+RxDic3kkPcWRSldgk3i2+xF2TBVf29xdwVewkOsJU7IEk5kPAp0TzfGGWbk69rC3KMRsCbOpXpAnwusn2e2prgUm0Xhl94UvvI09vX8RE2LiJnF+C0h4uy9JLqdpD6h0lKwPnQ8s08t+HwVNzzaL/kQy6FTcoBLl8baJJoE59vKU0MjlCf3z4ZWq0P66/tiCNIKXwGLpyml+8J966pv6LJOQdDfoBY/wj2IWWBGEkwmCZUoXBrQp6jtbAAIOM6EvDK/iqGvk1OAiNPUsJ03jU7/eEWKT9hs2Gw+n8Rs39AqueX7tlikSmPHRPLO2nTWQEdEIzLBHQ8GYioqtUoQvycdf1S05whNCwwh++D8S9r/4Z8wAIfpoC+f//1QP74WPkQaapUX8qTHHcOpuwQDis= leoppro@LeopProdeMacBook-Pro.local",
+                                "mode": "000700",
+                                "owner": "tidb",
+                                "group": "tidb"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSRegionArch2AL2AMI",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        {
+                            "Fn::FindInMap": [
+                                "AWSInstanceType2Arch",
+                                {
+                                    "Ref": "InstanceType"
+                                },
+                                "Arch"
+                            ]
+                        }
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "TiDBServerSecurityGroup"
+                    }
+                ],
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash -xe\n",
+                                "yum update -y aws-cfn-bootstrap\n",
+                                "# Install the files and packages from the metadata\n",
+                                "/opt/aws/bin/cfn-init -v ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource TiKV1ServerInstance ",
+                                "         --configsets InstallAndRun ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n",
+                                "# Signal the status from cfn-init\n",
+                                "/opt/aws/bin/cfn-signal -e $? ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource TiKV1ServerInstance ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "CreationPolicy": {
+                "ResourceSignal": {
+                    "Timeout": "PT15M"
+                }
+            }
+        },
+        "TiKV2ServerInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "configSets": {
+                        "InstallAndRun": [
+                            "AddUser",
+                            "ImportFile"
+                        ]
+                    },
+                    "AddUser": {
+                        "commands": {
+                            "01_adduser": {
+                                "command": "sudo su - root -c 'useradd -m tidb'"
+                            },
+                            "02_sudoer": {
+                                "command": "sudo su - root -c 'echo \"tidb ALL=(ALL) NOPASSWD: ALL\" > /etc/sudoers.d/tidb'"
+                            },
+                            "03_chmod": {
+                                "command": "sudo su - tidb -c 'mkdir -p /home/tidb/.ssh/ && chmod 0700 /home/tidb/.ssh/'"
+                            }
+                        }
+                    },
+                    "ImportFile": {
+                        "files": {
+                            "/home/tidb/.ssh/authorized_keys": {
+                                "content": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDPZ9ChdjqtaCfvCclZN6273gXju8ZILPEawZgtjdEPdI81ujxA18zztsSdC7n/zuoqrzSY7S7HDtNW37GhHkcg8QneBjY09pCxFZpE/7oIn+RxDic3kkPcWRSldgk3i2+xF2TBVf29xdwVewkOsJU7IEk5kPAp0TzfGGWbk69rC3KMRsCbOpXpAnwusn2e2prgUm0Xhl94UvvI09vX8RE2LiJnF+C0h4uy9JLqdpD6h0lKwPnQ8s08t+HwVNzzaL/kQy6FTcoBLl8baJJoE59vKU0MjlCf3z4ZWq0P66/tiCNIKXwGLpyml+8J966pv6LJOQdDfoBY/wj2IWWBGEkwmCZUoXBrQp6jtbAAIOM6EvDK/iqGvk1OAiNPUsJ03jU7/eEWKT9hs2Gw+n8Rs39AqueX7tlikSmPHRPLO2nTWQEdEIzLBHQ8GYioqtUoQvycdf1S05whNCwwh++D8S9r/4Z8wAIfpoC+f//1QP74WPkQaapUX8qTHHcOpuwQDis= leoppro@LeopProdeMacBook-Pro.local",
+                                "mode": "000700",
+                                "owner": "tidb",
+                                "group": "tidb"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSRegionArch2AL2AMI",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        {
+                            "Fn::FindInMap": [
+                                "AWSInstanceType2Arch",
+                                {
+                                    "Ref": "InstanceType"
+                                },
+                                "Arch"
+                            ]
+                        }
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "InstanceType"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "TiDBServerSecurityGroup"
+                    }
+                ],
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash -xe\n",
+                                "yum update -y aws-cfn-bootstrap\n",
+                                "# Install the files and packages from the metadata\n",
+                                "/opt/aws/bin/cfn-init -v ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource TiKV2ServerInstance ",
+                                "         --configsets InstallAndRun ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n",
+                                "# Signal the status from cfn-init\n",
+                                "/opt/aws/bin/cfn-signal -e $? ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource TiKV2ServerInstance ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "CreationPolicy": {
+                "ResourceSignal": {
+                    "Timeout": "PT15M"
+                }
+            }
+        },
+        "TiDBServerSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Enable TiDB and SSH port",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "4000",
+                        "ToPort": "4000",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "2379",
+                        "ToPort": "2379",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "2380",
+                        "ToPort": "2380",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "10080",
+                        "ToPort": "10080",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "20160",
+                        "ToPort": "20160",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "20180",
+                        "ToPort": "20180",
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "22",
+                        "ToPort": "22",
+                        "CidrIp": {
+                            "Ref": "SSHLocation"
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "Outputs": {
+        "TiDBPublicIp": {
+            "Description": "Public Ip of TiDB server",
+            "Value": {
+                "Fn::GetAtt": [
+                    "TiDBServerInstance",
+                    "PublicIp"
+                ]
+            }
+        },
+        "TiDBInstanceID": {
+            "Description": "Instance ID of TiDB server",
+            "Value": {
+                "Ref": "TiDBServerInstance"
+            }
+        },
+        "TiKV1InstanceID": {
+            "Description": "Instance ID of TiKV1 server",
+            "Value": {
+                "Ref": "TiKV1ServerInstance"
+            }
+        },
+        "TiKV2InstanceID": {
+            "Description": "Instance ID of TiKV2 server",
+            "Value": {
+                "Ref": "TiKV2ServerInstance"
+            }
+        }
+    }
+}
